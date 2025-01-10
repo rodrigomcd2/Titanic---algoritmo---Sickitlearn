@@ -1,0 +1,59 @@
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from sklearn.metrics import accuracy_score
+
+# importe date
+trainpath = '/kaggle/input/titanic/train.csv'
+testpath = '/kaggle/input/titanic/test.csv'
+subpath = '/kaggle/input/titanic/gender_submission.csv'
+
+traindata = pd.read_csv(trainpath).dropna(subset=['Age'])
+testdata = pd.read_csv(testpath).dropna(subset=['Age'])
+
+# definir os dados
+trainfeatures = ['Age']
+y_train = traindata.Survived
+X_train = traindata[trainfeatures]
+X_test = testdata[trainfeatures]
+
+# Definir e ajustar o modelo
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# Prever os dados
+prediction = (model.predict_proba(X_test)[:, 1] >= 0.5).astype(int)
+
+# Gerar saída
+output = pd.DataFrame({'PassengerId': testdata.PassengerId, 'Survived': prediction})
+output.to_csv('coolsubmission.csv', index=False)
+
+# Criar dados para o gráfico
+age_range = pd.DataFrame({'Age': np.linspace(traindata.Age.min(), traindata.Age.max(), 100)})
+prob = model.predict_proba(age_range)[:, 1]
+
+# features
+features = ["Pclass", "Sex", "SibSp", "Parch"]
+
+# O gráfico
+plt.figure(figsize=(12, 10))
+
+# Loop pelos recursos e plotar cada um
+for i, feature in enumerate(features, 1):
+    plt.subplot(2, 2, i)  # 2 linhas, 2 colunas
+    sns.countplot(x=feature, data=traindata, hue='Survived', palette='Set2')
+    plt.title(f'Survival by {feature}')
+    plt.xlabel(feature)
+    plt.ylabel('Count')
+    plt.legend(title='Survived', labels=['No', 'Yes'])
+
+# Ajustar o layout para evitar sobreposição
+plt.tight_layout()
+plt.show()
+
+# Avaliando o modelo
+y_pred = model.predict(X_train)
+accuracy = accuracy_score(y_train, y_pred)
+print(f"Acurácia do modelo: {accuracy:.2f}")
